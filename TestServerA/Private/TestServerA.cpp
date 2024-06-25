@@ -1,18 +1,18 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 
-#include "BlankProgram.h"
+#include "TestServerA.h"
 
 #include "RequiredProgramMainCPPInclude.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogBlankProgram, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogTestServerA, Log, All);
 
-IMPLEMENT_APPLICATION(BlankProgram, "BlankProgram");
+IMPLEMENT_APPLICATION(TestServerA, "TestServerA");
 
 INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 {
 	GEngineLoop.PreInit(ArgC, ArgV);
-	UE_LOG(LogBlankProgram, Display, TEXT("Hello World"));
+	UE_LOG(LogTestServerA, Display, TEXT("Hello World"));
 	FEngineLoop::AppExit();
 	return 0;
 }

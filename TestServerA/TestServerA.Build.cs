@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class BlankProgram : ModuleRules
+public class TestServerA : ModuleRules
 {
-	public BlankProgram(ReadOnlyTargetRules Target) : base(Target)
+	public TestServerA(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PublicIncludePaths.Add("Runtime/Launch/Public");
 

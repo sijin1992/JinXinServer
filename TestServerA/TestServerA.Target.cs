@@ -4,14 +4,14 @@ using UnrealBuildTool;
 using System.Collections.Generic;
 
 [SupportedPlatforms(UnrealPlatformClass.All)]
-public class BlankProgramTarget : TargetRules
+public class TestServerATarget : TargetRules
 {
-	public BlankProgramTarget(TargetInfo Target) : base(Target)
+	public TestServerATarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Program;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 		LinkType = TargetLinkType.Monolithic;
-		LaunchModuleName = "BlankProgram";
+		LaunchModuleName = "TestServerA";
 
 		// Lean and mean
 		bBuildDeveloperTools = false;
