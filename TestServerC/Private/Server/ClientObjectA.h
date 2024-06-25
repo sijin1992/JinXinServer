@@ -8,8 +8,12 @@ UCLASS()
 class UClientObjectA : public USimpleController
 {
 	GENERATED_BODY()
+public:
+	UClientObjectA();
 
 protected:
+	float Time;
+
 	//主线程运行
 	virtual void Init();
 	//主线程运行
