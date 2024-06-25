@@ -12,5 +12,9 @@ public class TestServerA : ModuleRules
 
 		PrivateDependencyModuleNames.Add("Core");
 		PrivateDependencyModuleNames.Add("Projects");
+		//新增
+		PrivateDependencyModuleNames.Add("ApplicationCore");
+		PrivateDependencyModuleNames.Add("SimpleNetChannel");//SNC
+		PrivateDependencyModuleNames.Add("CoreUObject");//要用到反射
 	}
 }
