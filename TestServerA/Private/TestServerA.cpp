@@ -31,6 +31,62 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 	//UDP连接客户端C
 	CClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_UDP);
 
+	//3、反射类注入：利用反射绑定类
+	LocalServer->NetworkObjectClass = UServerObject::StaticClass();
+	BClient->NetworkObjectClass = UClientObjectB::StaticClass();
+	CClient->NetworkObjectClass = UClientObjectC::StaticClass();
+
+	//4、服务器和客户端的初始化
+	//初始化服务器
+	if (!LocalServer->Init())
+	{
+		delete LocalServer;
+		UE_LOG(LogTestServerA, Error, TEXT("LocalServer Init fail."));
+		return -1;
+	}
+	//初始化B客户端，12345是随便写的端口
+	if (!BClient->Init(12345))
+	{
+		delete BClient;
+		UE_LOG(LogTestServerA, Error, TEXT("BClient Init fail."));
+		return -1;
+	}
+	//初始化C客户端
+	if (!CClient->Init(11345))
+	{
+		delete CClient;
+		UE_LOG(LogTestServerA, Error, TEXT("CClient Init fail."));
+		return -1;
+	}
+
+	//5、检测
+	double LastTime = FPlatformTime::Seconds();
+	//判断引擎是否要退出
+	while (!IsEngineExitRequested())
+	{
+		FPlatformProcess::Sleep(0.03f);//让引擎默认休眠3秒
+
+		//获取时间间隔
+		double Now = FPlatformTime::Seconds();
+		float DeltaSeconds = Now - LastTime;
+
+		//执行Tick
+		LocalServer->Tick(DeltaSeconds);
+		BClient->Tick(DeltaSeconds);
+		CClient->Tick(DeltaSeconds);
+
+		//执行UE本身的线程
+		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
+		FTSTicker::GetCoreTicker().Tick(FApp::GetDeltaTime());
+
+		LastTime = Now;
+	}
+
+	//6、销毁
+	FSimpleNetManage::Destroy(LocalServer);
+	FSimpleNetManage::Destroy(BClient);
+	FSimpleNetManage::Destroy(CClient);
+
 	UE_LOG(LogTestServerA, Display, TEXT("Hello World"));
 	FEngineLoop::AppExit();
 	return 0;
