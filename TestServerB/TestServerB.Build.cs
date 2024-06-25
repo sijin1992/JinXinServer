@@ -12,9 +12,12 @@ public class TestServerB : ModuleRules
 
 		PrivateDependencyModuleNames.Add("Core");
 		PrivateDependencyModuleNames.Add("Projects");
-		//新增
+		//新增插件
+		//系统模块
 		PrivateDependencyModuleNames.Add("ApplicationCore");
-		PrivateDependencyModuleNames.Add("SimpleNetChannel");//SNC
 		PrivateDependencyModuleNames.Add("CoreUObject");//要用到反射
+		//自定义插件
+		PrivateDependencyModuleNames.Add("SimpleNetChannel");//SNC插件
+		PrivateDependencyModuleNames.Add("TestServerCommon");//协议插件
 	}
 }
