@@ -43,15 +43,15 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 		UE_LOG(LogTestServerA, Error, TEXT("LocalServer Init fail."));
 		return -1;
 	}
-	//初始化B客户端，12345是随便写的端口
-	if (!BClient->Init(12345))
+	//初始化B客户端
+	if (!BClient->Init(10226))
 	{
 		delete BClient;
 		UE_LOG(LogTestServerA, Error, TEXT("BClient Init fail."));
 		return -1;
 	}
 	//初始化C客户端
-	if (!CClient->Init(11345))
+	if (!CClient->Init(10228))
 	{
 		delete CClient;
 		UE_LOG(LogTestServerA, Error, TEXT("CClient Init fail."));
