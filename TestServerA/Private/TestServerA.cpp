@@ -10,8 +10,7 @@
 #include "Server/ServerObject.h"
 #include "Server/ClientObjectB.h"
 #include "Server/ClientObjectC.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogTestServerA, Log, All);
+#include "TestServerALog.h"
 
 IMPLEMENT_APPLICATION(TestServerA, "TestServerA");
 
