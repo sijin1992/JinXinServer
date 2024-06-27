@@ -25,13 +25,16 @@ void UServerObject::RecvProtocol(uint32 InProtocol)
 	{
 		case SP_HelloRequests:
 			FString HelloString;
-			FSimpleAddrInfo AddrInfo;
+			FSimpleAddrInfo AddrInfo;//A服务器地址
 			SIMPLE_PROTOCOLS_RECEIVE(SP_HelloRequests, HelloString, AddrInfo);
 
 			if (!HelloString.IsEmpty())
 			{
 				UE_LOG(LogTestServerB, Display, TEXT("BServer Recv %s"), *HelloString);
 			}
+			//回调
+			FString Hello2String = TEXT("OK B");
+			SIMPLE_PROTOCOLS_SEND(SP_HelloResponses, Hello2String, AddrInfo);
 
 			break;
 	}

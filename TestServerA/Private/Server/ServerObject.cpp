@@ -38,7 +38,7 @@ void UServerObject::RecvProtocol(uint32 InProtocol)
 				//协议回调(当接收到C服务器中的A客户端向A服务器发送的协议时，通过A服务器直接发送协议回复给C服务器中的A客户端)
 				//SIMPLE_PROTOCOLS_SEND(SP_HelloResponses, HelloResp);
 				//协议转发,一定要记录地址(当A服务器接收到C服务器中的A客户端发送的协议时，将这个协议通过A服务器中的B客户端转发给B服务器)
-				FSimpleAddrInfo AddrInfo;
+				FSimpleAddrInfo AddrInfo;//当前服务器A自身的地址
 				GetAddrInfo(AddrInfo);
 				SIMPLE_CLIENT_SEND(BClient, SP_HelloRequests, HelloString, AddrInfo)
 				UE_LOG(LogTestServerA, Display, TEXT("AServer send %s"), *HelloResp);
