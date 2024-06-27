@@ -24,11 +24,11 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 
 	//2、创建实例
 	//UDP监听服务器
-	LocalServer = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_UDP);
+	LocalServer = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_UDP,true);
 	//UDP连接客户端A(true表示开启高并发)
 	AClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_UDP,true);
 	//UDP连接客户端B
-	BClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_UDP);
+	BClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_UDP,true);
 
 	//3、反射类注入：利用反射绑定类
 	LocalServer->NetworkObjectClass = UServerObject::StaticClass();
