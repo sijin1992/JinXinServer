@@ -23,8 +23,8 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 	FSimpleNetGlobalInfo::Get()->Init();//初始化通道
 
 	//2、创建实例
-	//UDP监听服务器
-	LocalServer = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_UDP);
+	//UDP监听服务器(true表示开启高并发)
+	LocalServer = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_UDP,true);
 	//UDP连接客户端B
 	BClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_UDP);
 	//UDP连接客户端C
