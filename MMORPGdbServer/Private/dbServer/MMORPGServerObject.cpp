@@ -2,6 +2,7 @@
 #include "Blueprint/SimpleMysqlObject.h"
 #include "SimpleMySQLibrary.h"
 #include "MysqlConfig.h"
+#include "Log/MMORPGdbServerLog.h"
 
 void UMMORPGServerObject::Init()
 {
@@ -80,6 +81,7 @@ bool UMMORPGServerObject::Post(const FString& InSQL)
 			else
 			{
 				//
+				UE_LOG(LogMMORPGdbServer, Error, TEXT("MMORPGdbServer Error: Post msg [ %s]"), *ErrMsg);
 			}
 		}
 	}
@@ -112,6 +114,7 @@ bool UMMORPGServerObject::Get(const FString& InSQL, TArray<FSimpleMysqlResult>& 
 			else
 			{
 				//
+				UE_LOG(LogMMORPGdbServer, Error, TEXT("MMORPGdbServer Error: Get msg [ %s]"), *ErrMsg);
 			}
 		}
 	}

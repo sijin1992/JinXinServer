@@ -6,16 +6,15 @@
 #include "Global/SimpleNetGlobalInfo.h"
 #include "SimpleNetManage.h"
 #include "dbServer/MMORPGServerObject.h"
+#include "Log/MMORPGdbServerLog.h"
 #include "RequiredProgramMainCPPInclude.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogMMORPGdbServer, Log, All);
 
 IMPLEMENT_APPLICATION(MMORPGdbServer, "MMORPGdbServer");
 
 INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 {
 	GEngineLoop.PreInit(ArgC, ArgV);
-	UE_LOG(LogMMORPGdbServer, Display, TEXT("Hello World"));
+	UE_LOG(LogMMORPGdbServer, Display, TEXT("LogMMORPGdbServer Begining"));
 
 	//初始化配置表
 	FSimpleMysqlConfig::Get()->Init();
