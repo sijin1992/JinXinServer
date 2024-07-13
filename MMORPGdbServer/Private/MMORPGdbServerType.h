@@ -21,5 +21,5 @@ struct FMysqlConfig
 	FString Pawd;//密码
 	FString DB;//数据库
 	int32 Port;//端口
-	TArray<ESimpleClientFlags> ClientFlags;
+	TArray<ESimpleClientFlags> ClientFlags;//行为,支持多条语句
 };
