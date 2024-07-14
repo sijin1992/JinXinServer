@@ -2,17 +2,15 @@
 
 
 #include "MMORPGGateServer.h"
-
+#include "Log/MMORPGGateServerLog.h"
 #include "RequiredProgramMainCPPInclude.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogMMORPGGateServer, Log, All);
 
 IMPLEMENT_APPLICATION(MMORPGGateServer, "MMORPGGateServer");
 
 INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 {
 	GEngineLoop.PreInit(ArgC, ArgV);
-	UE_LOG(LogMMORPGGateServer, Display, TEXT("Hello World"));
+	UE_LOG(LogMMORPGGateServer, Display, TEXT("MMORPGGateServer Beginning"));
 	FEngineLoop::AppExit();
 	return 0;
 }
