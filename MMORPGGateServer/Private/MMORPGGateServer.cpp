@@ -5,6 +5,9 @@
 #include "Log/MMORPGGateServerLog.h"
 #include "Global/SimpleNetGlobalInfo.h"
 #include "SimpleNetManage.h"
+#include "ServerList.h"
+#include "GateServer/MMORPGGateServerObject.h"
+#include "GateServer/MMORPGdbClientObject.h"
 #include "RequiredProgramMainCPPInclude.h"
 
 IMPLEMENT_APPLICATION(MMORPGGateServer, "MMORPGGateServer");
@@ -18,16 +21,26 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 	FSimpleNetGlobalInfo::Get()->Init();
 
 	//创建服务器实例
-	FSimpleNetManage* GateServer = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_TCP);
+	GateServer = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_TCP);
+	//创建db客户端
+	dbClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_TCP);
 
 	//注册反射类
-
+	GateServer->NetworkObjectClass = UMMORPGGateServerObject::StaticClass();
+	dbClient->NetworkObjectClass = UMMORPGdbClientObject::StaticClass();
 
 	//初始化服务器
 	if (!GateServer->Init())
 	{
 		delete GateServer;
 		UE_LOG(LogMMORPGGateServer, Error, TEXT("GateServer Init fail."));
+		return INDEX_NONE;
+	}
+	//初始化客户端
+	if (!dbClient->Init(11221))
+	{
+		delete dbClient;
+		UE_LOG(LogMMORPGGateServer, Error, TEXT("dbClient Init fail."));
 		return INDEX_NONE;
 	}
 
@@ -44,10 +57,13 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 
 		//每帧检测连接
 		GateServer->Tick(DeltaSeconds);
+		dbClient->Tick(DeltaSeconds);
 
 		LastTime = Now;
 	}
 
+	FSimpleNetManage::Destroy(GateServer);
+	FSimpleNetManage::Destroy(dbClient);
 	FEngineLoop::AppExit();
 	return 0;
 }
