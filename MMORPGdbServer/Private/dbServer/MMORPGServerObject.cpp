@@ -3,6 +3,7 @@
 #include "SimpleMySQLibrary.h"
 #include "MysqlConfig.h"
 #include "Log/MMORPGdbServerLog.h"
+#include "Protocol/LoginProtocol.h"
 
 void UMMORPGServerObject::Init()
 {
@@ -63,6 +64,23 @@ void UMMORPGServerObject::Close()
 void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 {
 	Super::RecvProtocol(InProtocol);
+
+	switch (InProtocol)
+	{
+	case SP_LoginRequests:
+		//接收到登录服务器转发的登录请求协议
+		FString AccountString;
+		FString PasswordString;
+		FSimpleAddrInfo AddrInfo;
+
+		SIMPLE_PROTOCOLS_RECEIVE(SP_LoginRequests, AccountString, PasswordString, AddrInfo)
+
+		//访问数据库
+		FString URL;
+		UE_LOG(LogMMORPGdbServer, Display, TEXT("AccountString=%s,PasswordString=%s"), *AccountString, *PasswordString);
+
+		break;
+	}
 }
 
 bool UMMORPGServerObject::Post(const FString& InSQL)
