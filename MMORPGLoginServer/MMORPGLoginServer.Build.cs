@@ -15,5 +15,6 @@ public class MMORPGLoginServer : ModuleRules
 		PrivateDependencyModuleNames.Add("CoreUObject");
 		PrivateDependencyModuleNames.Add("ApplicationCore");
 		PrivateDependencyModuleNames.Add("SimpleNetChannel");
+		PrivateDependencyModuleNames.Add("MMORPGCommon");
 	}
 }

@@ -16,5 +16,6 @@ public class MMORPGdbServer : ModuleRules
 		PrivateDependencyModuleNames.Add("ApplicationCore");
 		PrivateDependencyModuleNames.Add("SimpleMySQL");
 		PrivateDependencyModuleNames.Add("SimpleNetChannel");
+		PrivateDependencyModuleNames.Add("MMORPGCommon");
 	}
 }
