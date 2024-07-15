@@ -8,6 +8,7 @@
 #include "dbServer/MMORPGServerObject.h"
 #include "Log/MMORPGdbServerLog.h"
 #include "RequiredProgramMainCPPInclude.h"
+#include "SimpleHTTPManage.h"
 
 IMPLEMENT_APPLICATION(MMORPGdbServer, "MMORPGdbServer");
 
@@ -51,7 +52,7 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 
 		//每帧检测链接
 		dbServer->Tick(DeltaSeconds);
-
+		FSimpleHttpManage::Get()->Tick(DeltaSeconds);
 		LastTime = Now;
 	}
 

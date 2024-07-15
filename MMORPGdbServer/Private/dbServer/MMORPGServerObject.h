@@ -3,9 +3,11 @@
 #include "CoreMinimal.h"
 #include "UObject/SimpleController.h"
 #include "Core/SimpleMysqlLinkType.h"
+#include "SimpleHTTPManage.h"
 #include "MMORPGServerObject.generated.h"
 
 class USimpleMysqlObject;
+
 UCLASS()
 class UMMORPGServerObject : public USimpleController
 {
@@ -16,6 +18,16 @@ public:
 	virtual void Tick(float DeltaTime);
 	virtual void Close();
 	virtual void RecvProtocol(uint32 InProtocol);//当对方向当前服务器发送协议时触发
+
+protected:
+	/// <summary>
+	/// 验证密码回调的代理函数
+	/// </summary>
+	/// <param name="InRequest">验证密码的请求</param>
+	/// <param name="InResponse">验证密码的回调</param>
+	/// <param name="bLinkSuccessful">是否成功</param>
+	UFUNCTION()
+	void CheckPasswordResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful);
 
 public:
 	/// <summary>

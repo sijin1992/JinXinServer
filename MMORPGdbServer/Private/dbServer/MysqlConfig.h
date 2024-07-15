@@ -1,6 +1,13 @@
 #pragma once
 #include "MMORPGdbServerType.h"
 
+//密码验证状态
+enum EPasswordVerification
+{
+	VERIFICATION_SUCCESS = 0,	//成功
+	VERIFICATION_FAIL,			//失败
+};
+
 //只是框架
 class FSimpleMysqlConfig
 {
