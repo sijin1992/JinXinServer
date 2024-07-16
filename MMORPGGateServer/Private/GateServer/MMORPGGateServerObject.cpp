@@ -28,7 +28,10 @@ void UMMORPGGateServerObject::RecvProtocol(uint32 InProtocol)
 		//收到网关状态请求协议
 		//准备数据
 		FMMORPGGateStatus Status;
-		GetAddrInfo(Status.GateServerAddrInfo);
+		//GetAddrInfo：获取连接到服务器的对象的地址
+		//GetServerAddrInfo:获取当前服务器的地址
+		//获取网关服务器地址
+		GetServerAddrInfo(Status.GateServerAddrInfo);
 		Status.GateConnetionNum = GetManage()->GetConnetionNum();
 		//发送回调
 		SIMPLE_PROTOCOLS_SEND(SP_GateStatusResponses, Status);
