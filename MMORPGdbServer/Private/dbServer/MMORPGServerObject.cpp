@@ -179,9 +179,12 @@ void UMMORPGServerObject::CheckPasswordResult(const FSimpleHttpRequest& InReques
 			{
 				if (UserID != 0)
 				{
+					FMMORPGUserData UserData;
+					UserData.ID = UserID;
 					//访问数据库
 					FString SQL = FString::Printf(TEXT("SELECT user_login,user_email,user_url,display_name FROM wp_users WHERE ID=%i;"), UserID);
 					TArray<FSimpleMysqlResult> Result;
+
 					if (Get(SQL, Result))
 					{
 						if (Result.Num() > 0)
@@ -191,19 +194,25 @@ void UMMORPGServerObject::CheckPasswordResult(const FSimpleHttpRequest& InReques
 							{
 								if (FString* InUserLogin = Temp.Rows.Find(TEXT("user_login")))
 								{
+									UserData.Account = *InUserLogin;
 								}
 								if (FString* InUserEmail = Temp.Rows.Find(TEXT("user_email")))
 								{
+									UserData.Email = *InUserEmail;
 								}
-								if (FString* InUserUrl = Temp.Rows.Find(TEXT("user_url")))
-								{
-								}
+								//if (FString* InUserUrl = Temp.Rows.Find(TEXT("user_url")))
+								//{
+								//	UserData.Email = *InUserEmail;
+								//}
 								if (FString* InDisplayName = Temp.Rows.Find(TEXT("display_name")))
 								{
+									UserData.Name = *InDisplayName;
 								}
 							}
 						}
 					}
+					//将数据转成Json
+					NetDataAnalysis::UserDataToString(UserData, String);
 
 					UE_LOG(LogMMORPGdbServer, Display, TEXT("MMORPGdbServer login success"));
 					//向登录服务器发送登录回调，告知登录成功
