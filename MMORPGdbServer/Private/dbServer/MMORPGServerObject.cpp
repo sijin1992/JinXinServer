@@ -151,7 +151,9 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 			CharacterAppearances.Add(FMMORPGCharacterAppearance());
 			FMMORPGCharacterAppearance& InLast = CharacterAppearances.Last();
 			InLast.Name = TEXT("Test Character");
+			InLast.Date = TEXT("2024.7.18");
 			InLast.Lv = 15;
+			InLast.SlotPosition = 1;
 
 			//将角色数据转成Json
 			FString JsonString;
