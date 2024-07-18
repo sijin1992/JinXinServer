@@ -6,6 +6,7 @@
 #include "Protocol/LoginProtocol.h"
 #include "MMORPGType.h"
 #include "Global/SimpleNetGlobalInfo.h"
+#include "Protocol/HallProtocol.h"
 
 void UMMORPGServerObject::Init()
 {
@@ -70,6 +71,7 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 	switch (InProtocol)
 	{
 	case SP_LoginRequests:
+	{
 		//接收到登录服务器转发的登录请求协议
 		FString AccountString;
 		FString PasswordString;
@@ -77,7 +79,7 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 
 		SIMPLE_PROTOCOLS_RECEIVE(SP_LoginRequests, AccountString, PasswordString, AddrInfo)
 
-		FString String = TEXT("[]");//发送协议时的自定义参数
+			FString String = TEXT("[]");//发送协议时的自定义参数
 		//访问数据库
 		FString SQL = FString::Printf(TEXT("SELECT ID,user_pass FROM wp_users WHERE user_login = '%s' or user_email = '%s';"), *AccountString, *AccountString);
 		TArray<FSimpleMysqlResult> Result;
@@ -134,6 +136,35 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 		UE_LOG(LogMMORPGdbServer, Display, TEXT("AccountString=%s,PasswordString=%s"), *AccountString, *PasswordString);
 
 		break;
+	}
+	case SP_CharacterAppearanceRequests:
+	{
+		//收到GateServer发送的角色信息请求
+		int32 InUserID = INDEX_NONE;
+		FSimpleAddrInfo AddrInfo;
+		
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, InUserID, AddrInfo);
+		if (InUserID > 0)
+		{
+			//数据库
+			FCharacterAppearacnce CharacterAppearances;
+			CharacterAppearances.Add(FMMORPGCharacterAppearance());
+			FMMORPGCharacterAppearance& InLast = CharacterAppearances.Last();
+			InLast.Name = TEXT("Test Character");
+			InLast.Lv = 15;
+
+			//将角色数据转成Json
+			FString JsonString;
+			NetDataAnalysis::CharacterAppearacnceToString(CharacterAppearances, JsonString);
+
+			//发送角色请求回调
+			SIMPLE_PROTOCOLS_SEND(SP_CharacterAppearanceResponses, AddrInfo, JsonString);
+
+			UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_CharacterAppearanceResponses]"));
+		}
+
+		break;
+	}
 	}
 }
 
