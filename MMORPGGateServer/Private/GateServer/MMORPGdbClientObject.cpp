@@ -57,14 +57,15 @@ void UMMORPGdbClientObject::RecvProtocol(uint32 InProtocol)
 	case SP_CreateCharacterResponses:
 	{
 		//收到dbServer返回的创建角色回调
+		FSimpleAddrInfo AddrInfo;
 		ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
 		bool bCreateCharacter = false;//是否创角成功
-		FSimpleAddrInfo AddrInfo;
+		FString JsonString;
 		//接收角色数据
-		SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, CheckNameType, bCreateCharacter, AddrInfo);
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, CheckNameType, bCreateCharacter, JsonString, AddrInfo);
 
 		//向本地服务器转发协议
-		SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo, CheckNameType, bCreateCharacter);
+		SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo, CheckNameType, bCreateCharacter, JsonString);
 
 		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CreateCharacterResponses]"));
 		break;

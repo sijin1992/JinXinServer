@@ -351,7 +351,7 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 				}
 
 				//发送创建角色回调
-				SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, CheckNameType, bCreateCharacter, AddrInfo);
+				SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, CheckNameType, bCreateCharacter, CAJson, AddrInfo);
 
 				UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_CreateCharacterResponses]"));
 			}
