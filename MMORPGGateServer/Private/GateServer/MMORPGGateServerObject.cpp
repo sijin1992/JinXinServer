@@ -58,6 +58,38 @@ void UMMORPGGateServerObject::RecvProtocol(uint32 InProtocol)
 
 		break;
 	}
+	case SP_CheckCharacterNameRequests:
+	{
+		//收到检查角色名字的请求
+		int32 InUserID = INDEX_NONE;
+		FString CharacterName;
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameRequests, InUserID, CharacterName);
+
+		//获取本地服务器地址信息
+		FSimpleAddrInfo AddrInfo;
+		GetAddrInfo(AddrInfo);
+		//把本地服务器当作客户端向数据库服务器转发协议
+		SIMPLE_CLIENT_SEND(dbClient, SP_CheckCharacterNameRequests, InUserID, CharacterName, AddrInfo);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CheckCharacterNameRequests] InUserID=%i CharacterName=%s"), InUserID, *CharacterName);
+		break;
+	}
+	case SP_CreateCharacterRequests:
+	{
+		//收到创建角色的请求
+		int32 InUserID = INDEX_NONE;
+		FString CAJson;
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, InUserID, CAJson);
+
+		//获取本地服务器地址信息
+		FSimpleAddrInfo AddrInfo;
+		GetAddrInfo(AddrInfo);
+		//把本地服务器当作客户端向数据库服务器转发协议
+		SIMPLE_CLIENT_SEND(dbClient, SP_CreateCharacterRequests, InUserID, CAJson, AddrInfo);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CreateCharacterRequests] InUserID=%i CAJson=%s"), InUserID, *CAJson);
+		break;
+	}
 	}
 }
 

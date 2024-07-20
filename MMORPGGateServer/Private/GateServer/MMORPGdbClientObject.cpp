@@ -2,6 +2,7 @@
 #include "Log/MMORPGGateServerLog.h"
 #include "Protocol/HallProtocol.h"
 #include "ServerList.h"
+#include "MMORPGType.h"
 
 void UMMORPGdbClientObject::Init()
 {
@@ -25,6 +26,7 @@ void UMMORPGdbClientObject::RecvProtocol(uint32 InProtocol)
 	switch (InProtocol)
 	{
 	case SP_CharacterAppearanceResponses:
+	{
 		//收到dbServer返回的角色信息回调
 		FString String;//dbServer发送回来的角色Json数据
 		FSimpleAddrInfo AddrInfo;
@@ -38,6 +40,35 @@ void UMMORPGdbClientObject::RecvProtocol(uint32 InProtocol)
 
 		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CharacterAppearanceResponses]"));
 		break;
+	}
+	case SP_CheckCharacterNameResponses:
+	{
+		//收到dbServer返回的检查角色名字回调
+		ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
+		FSimpleAddrInfo AddrInfo;
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameResponses, CheckNameType, AddrInfo);
+
+		//向本地服务器转发协议
+		SIMPLE_SERVER_SEND(GateServer, SP_CheckCharacterNameResponses, AddrInfo, CheckNameType);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CheckCharacterNameResponses]"));
+		break;
+	}
+	case SP_CreateCharacterResponses:
+	{
+		//收到dbServer返回的创建角色回调
+		ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
+		bool bCreateCharacter = false;//是否创角成功
+		FSimpleAddrInfo AddrInfo;
+		//接收角色数据
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, CheckNameType, bCreateCharacter, AddrInfo);
+
+		//向本地服务器转发协议
+		SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo, CheckNameType, bCreateCharacter);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CreateCharacterResponses]"));
+		break;
+	}
 	}
 }
 

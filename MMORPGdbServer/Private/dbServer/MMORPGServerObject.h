@@ -4,6 +4,7 @@
 #include "UObject/SimpleController.h"
 #include "Core/SimpleMysqlLinkType.h"
 #include "SimpleHTTPManage.h"
+#include "MMORPGType.h"
 #include "MMORPGServerObject.generated.h"
 
 class USimpleMysqlObject;
@@ -18,6 +19,9 @@ public:
 	virtual void Tick(float DeltaTime);
 	virtual void Close();
 	virtual void RecvProtocol(uint32 InProtocol);//当对方向当前服务器发送协议时触发
+
+private:
+	ECheckNameType CheckName(const FString& InName);
 
 protected:
 	/// <summary>

@@ -4,7 +4,6 @@
 #include "MysqlConfig.h"
 #include "Log/MMORPGdbServerLog.h"
 #include "Protocol/LoginProtocol.h"
-#include "MMORPGType.h"
 #include "Global/SimpleNetGlobalInfo.h"
 #include "Protocol/HallProtocol.h"
 
@@ -41,6 +40,21 @@ void UMMORPGServerObject::Init()
 	{
 	}
 	*/
+
+	//初始化
+	FString Create_mmorpg_characters_ca_SQL = 
+		TEXT("CREATE TABLE IF NOT EXISTS `mmorpg_characters_ca`(\
+		`id` INT UNSIGNED AUTO_INCREMENT,\
+		`mmorpg_name` VARCHAR(100) NOT NULL,\
+		`mmorpg_date` VARCHAR(100) NOT NULL,\
+		`mmorpg_slot` INT,\
+		PRIMARY KEY(`id`)\
+		) ENGINE = INNODB DEFAULT CHARSET = utf8; ");
+
+	if (!Post(Create_mmorpg_characters_ca_SQL))
+	{
+		UE_LOG(LogMMORPGdbServer, Error, TEXT("create table mmorpg_characters_ca failed."));
+	}
 }
 
 void UMMORPGServerObject::Tick(float DeltaTime)
@@ -146,14 +160,64 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 		SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, InUserID, AddrInfo);
 		if (InUserID > 0)
 		{
-			//数据库
+			///数据库查询	
+			//先拿到用户元数据
+			FString IDs;
+			FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id = %i and meta_key = \"character_ca\";"), InUserID);
+			TArray<FSimpleMysqlResult> Result;
+			if (Get(SQL, Result))
+			{
+				if (Result.Num() > 0)
+				{
+					//解析数据库返回的数据,组装成角色ID字符串："1, 2, 3, 4, 5"
+					for (auto& MetaTemp : Result)
+					{
+						if (FString* InMetaValue = MetaTemp.Rows.Find(TEXT("meta_value")))
+						{
+							TArray<FString> Arrays;
+							InMetaValue->ParseIntoArray(Arrays, TEXT("|"));
+							for (auto& TempID : Arrays)
+							{
+								IDs += TempID + TEXT(",");
+							}
+							IDs.RemoveFromEnd(TEXT(","));
+						}
+					}
+				}
+			}
+
 			FCharacterAppearacnce CharacterAppearances;
-			CharacterAppearances.Add(FMMORPGCharacterAppearance());
-			FMMORPGCharacterAppearance& InLast = CharacterAppearances.Last();
-			InLast.Name = TEXT("Test Character");
-			InLast.Date = FDateTime::Now().ToString();
-			InLast.Lv = 15;
-			InLast.SlotPosition = 1;
+			//拿到角色数据
+			if (!IDs.IsEmpty())
+			{
+				SQL.Empty();
+				SQL = FString::Printf(TEXT("SELECT * FROM mmorpg_characters_ca WHERE id in(%s); "), *IDs);
+				Result.Empty();
+				if (Get(SQL, Result))
+				{
+					if (Result.Num() > 0)
+					{
+						//解析数据库返回的数据,组装成角色列表
+						for (auto& Temp : Result)
+						{
+							CharacterAppearances.Add(FMMORPGCharacterAppearance());
+							FMMORPGCharacterAppearance& InLast = CharacterAppearances.Last();
+							if (FString* InName = Temp.Rows.Find(TEXT("mmorpg_name")))
+							{
+								InLast.Name = *InName;
+							}
+							if (FString* InDate = Temp.Rows.Find(TEXT("mmorpg_date")))
+							{
+								InLast.Date = *InDate;
+							}
+							if (FString* InSlotPos = Temp.Rows.Find(TEXT("mmorpg_slot")))
+							{
+								InLast.SlotPosition = FCString::Atoi(**InSlotPos);
+							}
+						}
+					}
+				}
+			}
 
 			//将角色数据转成Json
 			FString JsonString;
@@ -167,7 +231,161 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 
 		break;
 	}
+	case SP_CheckCharacterNameRequests:
+	{
+		//收到检查角色名字的请求
+		int32 InUserID = INDEX_NONE;
+		FString CharacterName;
+		FSimpleAddrInfo AddrInfo;
+
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameRequests, InUserID, CharacterName, AddrInfo);
+
+		ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
+		if (InUserID > 0)
+		{
+			CheckNameType = CheckName(CharacterName);
+		}
+
+		//发送检查角色名字回调
+		SIMPLE_PROTOCOLS_SEND(SP_CheckCharacterNameResponses, CheckNameType, AddrInfo);
+
+		UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_CheckCharacterNameResponses]"));
+		break;
 	}
+	case SP_CreateCharacterRequests:
+	{
+		//收到创建角色的请求
+		int32 InUserID = INDEX_NONE;
+		FString CAJson;
+		FSimpleAddrInfo AddrInfo;
+
+		SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, InUserID, CAJson, AddrInfo);
+		if (InUserID > 0)
+		{
+			//将角色Json解析成角色信息
+			FMMORPGCharacterAppearance CA;
+			NetDataAnalysis::StringToFCharacterAppearacnce(CAJson, CA);
+			if (CA.SlotPosition != INDEX_NONE)
+			{
+				///数据库
+				//验证角色名字
+				ECheckNameType CheckNameType = CheckName(CA.Name);
+				bool bCreateCharacter = false;//是否可以继续创角的步骤
+				if (CheckNameType == ECheckNameType::NAME_NOT_EXIST)//角色名不存在才能创角
+				{
+					//先从元数据中拿到用户数据
+					bool bMetaExist = false;//是否已经有元数据了
+					TArray<FString> CAIDs;
+					FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id = %i and meta_key = \"character_ca\";"), InUserID);
+					TArray<FSimpleMysqlResult> Result;
+					if (Get(SQL, Result))
+					{
+						if (Result.Num() > 0)
+						{
+							for (auto& Temp : Result)
+							{
+								if (FString* InMetaValue = Temp.Rows.Find(TEXT("meta_value")))
+								{
+									InMetaValue->ParseIntoArray(CAIDs, TEXT("|"));
+								}
+							}
+							bMetaExist = true;
+						}
+						bCreateCharacter = true;
+					}
+					//插入角色数据
+					if (bCreateCharacter)
+					{
+						SQL.Empty();
+						SQL = FString::Printf(TEXT("INSERT INTO mmorpg_characters_ca(mmorpg_name,mmorpg_date,mmorpg_slot) VALUES(\"%s\",\"%s\",\"%i\");"), *CA.Name, *CA.Date, CA.SlotPosition);
+						if (Post(SQL))
+						{
+							//插入成功后查询角色名字
+							SQL.Empty();
+							SQL = FString::Printf(TEXT("SELECT id FROM mmorpg_characters_ca WHERE mmorpg_name = \"%s\";"), *CA.Name);
+							Result.Empty();
+							if (Get(SQL, Result))
+							{
+								if (Result.Num() > 0)
+								{
+									for (auto& Temp : Result)
+									{
+										if (FString* InIDString = Temp.Rows.Find(TEXT("id")))
+										{
+											CAIDs.Add(*InIDString);
+										}
+									}
+								}
+							}
+							else
+							{
+								bCreateCharacter = false;
+							}
+						}
+						else
+						{
+							bCreateCharacter = false;
+						}
+					}
+					//更新元数据
+					if (bCreateCharacter)
+					{
+						FString IDString;
+						for (auto& Temp : CAIDs) { IDString += Temp + TEXT("|"); }
+						IDString.RemoveFromEnd(TEXT("|"));
+						SQL.Empty();
+						if (bMetaExist)//如果已经有元数据了，就更新
+						{
+							SQL = FString::Printf(TEXT("UPDATE wp_usermeta SET meta_value=\"%s\" WHERE meta_key=\"character_ca\" and user_id=%i;"), *IDString, InUserID);
+						}
+						else
+						{//如果没有元数据，就插入新的
+							SQL = FString::Printf(TEXT("INSERT INTO wp_usermeta(user_id,meta_key,meta_value) VALUES(%i,\"character_ca\",\"%s\");"), InUserID, *IDString);
+						}
+
+						if (!Post(SQL))
+						{
+							bCreateCharacter = false;
+						}
+					}
+				}
+
+				//发送创建角色回调
+				SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, CheckNameType, bCreateCharacter, AddrInfo);
+
+				UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_CreateCharacterResponses]"));
+			}
+		}
+		break;
+	}
+	}
+}
+
+ECheckNameType UMMORPGServerObject::CheckName(const FString& InName)
+{
+	ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
+	if (!InName.IsEmpty())
+	{
+		//数据库
+		FString SQL = FString::Printf(TEXT("SELECT id FROM mmorpg_characters_ca WHERE mmorpg_name = \"%s\";"), *InName);
+		TArray<FSimpleMysqlResult> Result;
+		if (Get(SQL, Result))
+		{
+			if (Result.Num() > 0)
+			{
+				CheckNameType = ECheckNameType::NAME_EXIST;
+			}
+			else
+			{
+				CheckNameType = ECheckNameType::NAME_NOT_EXIST;
+			}
+		}
+		else
+		{
+			CheckNameType = ECheckNameType::SERVER_NOT_EXIST;
+		}
+	}
+	return CheckNameType;
 }
 
 void UMMORPGServerObject::CheckPasswordResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful)
