@@ -41,6 +41,7 @@ void UMMORPGServerObject::Init()
 	}
 	*/
 
+	//double(2,2):000.00
 	//初始化
 	FString Create_mmorpg_characters_ca_SQL = 
 		TEXT("CREATE TABLE IF NOT EXISTS `mmorpg_characters_ca`(\
@@ -48,6 +49,9 @@ void UMMORPGServerObject::Init()
 		`mmorpg_name` VARCHAR(100) NOT NULL,\
 		`mmorpg_date` VARCHAR(100) NOT NULL,\
 		`mmorpg_slot` INT,\
+		`leg_size` double(11,4) DEFAULT '0.00',\
+		`waist_size` double(11,4) DEFAULT '0.00',\
+		`arm_size` double(11,4) DEFAULT '0.00',\
 		PRIMARY KEY(`id`)\
 		) ENGINE = INNODB DEFAULT CHARSET = utf8; ");
 
@@ -214,6 +218,18 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 							{
 								InLast.SlotPosition = FCString::Atoi(**InSlotPos);
 							}
+							if (FString* InLegSize = Temp.Rows.Find(TEXT("leg_size")))
+							{
+								InLast.LegSize = FCString::Atof(**InLegSize);
+							}
+							if (FString* InWaistSize = Temp.Rows.Find(TEXT("waist_size")))
+							{
+								InLast.WaistSize = FCString::Atof(**InWaistSize);
+							}
+							if (FString* InArmSize = Temp.Rows.Find(TEXT("arm_size")))
+							{
+								InLast.ArmSize = FCString::Atof(**InArmSize);
+							}
 						}
 					}
 				}
@@ -297,7 +313,8 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 					if (bCreateCharacter)
 					{
 						SQL.Empty();
-						SQL = FString::Printf(TEXT("INSERT INTO mmorpg_characters_ca(mmorpg_name,mmorpg_date,mmorpg_slot) VALUES(\"%s\",\"%s\",\"%i\");"), *CA.Name, *CA.Date, CA.SlotPosition);
+						SQL = FString::Printf(TEXT("INSERT INTO mmorpg_characters_ca(mmorpg_name,mmorpg_date,mmorpg_slot,leg_size,waist_size,arm_size) VALUES(\"%s\",\"%s\",%i,%.2lf,%.2lf,%.2lf);"), 
+							*CA.Name, *CA.Date, CA.SlotPosition, CA.LegSize, CA.WaistSize, CA.ArmSize);
 						if (Post(SQL))
 						{
 							//插入成功后查询角色名字
