@@ -375,6 +375,97 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 		}
 		break;
 	}
+	case SP_DeleteCharacterRequests:
+	{
+		//收到删除角色的请求
+		int32 InUserID = INDEX_NONE;
+		FSimpleAddrInfo AddrInfo;
+		int32 SlotID = INDEX_NONE;
+
+		SIMPLE_PROTOCOLS_RECEIVE(SP_DeleteCharacterRequests, InUserID, SlotID, AddrInfo);
+		if (InUserID != INDEX_NONE && SlotID != INDEX_NONE)
+		{
+			///数据库
+			//先从元数据中拿到用户数据
+			FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id = %i and meta_key = \"character_ca\";"), InUserID);
+			TArray<FSimpleMysqlResult> Result;
+			FString IDs;
+			if (Get(SQL, Result))
+			{
+				if (Result.Num() > 0)
+				{
+					for (auto& Temp : Result)
+					{
+						if (FString* InMetaValue = Temp.Rows.Find(TEXT("meta_value")))
+						{
+							IDs = InMetaValue->Replace(TEXT("|"), TEXT(","));
+						}
+					}
+				}
+			}
+			//获取准备移除的数据ID
+			int32 SuccessDeleteCount = 0;
+			SQL.Empty();
+			SQL = FString::Printf(TEXT("SELECT id FROM mmorpg_characters_ca WHERE id in (%s) and mmorpg_slot=%i;"), *IDs, SlotID);
+
+			FString RemoveID;
+			Result.Empty();
+			if (Get(SQL, Result))
+			{
+				if (Result.Num() > 0)
+				{
+					for (auto& Temp : Result)
+					{
+						if (FString* InIDValue = Temp.Rows.Find(TEXT("id")))
+						{
+							RemoveID = *InIDValue;
+							SuccessDeleteCount++;
+						}
+					}
+				}
+			}
+
+			//删除Slot对应的对象
+			if (!IDs.IsEmpty())
+			{
+				SQL.Empty();
+				SQL = FString::Printf(TEXT("DELETE FROM mmorpg_characters_ca WHERE ID in (%s) and mmorpg_slot=%i;"),*IDs,SlotID);
+				if (Post(SQL))
+				{
+					SuccessDeleteCount++;
+				}
+			}
+
+			//更新元数据表
+			if (SuccessDeleteCount > 1)
+			{
+				TArray<FString> IDArray;
+				IDs.ParseIntoArray(IDArray, TEXT(","));
+
+				//移除ID
+				IDArray.Remove(RemoveID);
+
+				IDs.Empty();
+				for (auto& Temp :IDArray)
+				{
+					IDs += (Temp + TEXT("|"));
+				}
+				IDs.RemoveFromEnd("|");
+				SQL.Empty();
+				SQL = FString::Printf(TEXT("UPDATE wp_usermeta SET meta_value=\"%s\" WHERE meta_key=\"character_ca\" and user_id=%i;"), *IDs, InUserID);
+				if (Post(SQL))
+				{
+					SuccessDeleteCount++;
+				}
+			}
+
+			//发送删除角色回调
+			SIMPLE_PROTOCOLS_SEND(SP_DeleteCharacterResponses, InUserID, SlotID, SuccessDeleteCount, AddrInfo);
+
+			UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_DeleteCharacterResponses]"));
+		}
+		break;
+	}
 	}
 }
 

@@ -90,6 +90,22 @@ void UMMORPGGateServerObject::RecvProtocol(uint32 InProtocol)
 		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CreateCharacterRequests] InUserID=%i CAJson=%s"), InUserID, *CAJson);
 		break;
 	}
+	case SP_DeleteCharacterRequests:
+	{
+		//收到删除角色的请求
+		int32 InUserID = INDEX_NONE;
+		int32 SlotID;
+		SIMPLE_PROTOCOLS_RECEIVE(SP_DeleteCharacterRequests, InUserID, SlotID);
+
+		//获取远端地址信息
+		FSimpleAddrInfo AddrInfo;
+		GetAddrInfo(AddrInfo);
+		//把本地服务器当作客户端向数据库服务器转发协议
+		SIMPLE_CLIENT_SEND(dbClient, SP_DeleteCharacterRequests, InUserID, SlotID, AddrInfo);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_DeleteCharacterRequests] InUserID=%i SlotID=%i"), InUserID, SlotID);
+		break;
+	}
 	}
 }
 

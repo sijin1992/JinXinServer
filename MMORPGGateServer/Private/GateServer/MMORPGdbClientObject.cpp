@@ -70,6 +70,22 @@ void UMMORPGdbClientObject::RecvProtocol(uint32 InProtocol)
 		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_CreateCharacterResponses]"));
 		break;
 	}
+	case SP_DeleteCharacterResponses:
+	{
+		//收到dbServer返回的删除角色回调
+		FSimpleAddrInfo AddrInfo;
+		int32 InUserID = INDEX_NONE;
+		int32 SlotID = INDEX_NONE;
+		int32 SuccessDeleteCount = 0;
+		//接收角色数据
+		SIMPLE_PROTOCOLS_RECEIVE(SP_DeleteCharacterResponses, InUserID, SlotID, SuccessDeleteCount, AddrInfo);
+
+		//向本地服务器转发协议
+		SIMPLE_SERVER_SEND(GateServer, SP_DeleteCharacterResponses, AddrInfo, InUserID, SlotID, SuccessDeleteCount);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_DeleteCharacterResponses]"));
+		break;
+	}
 	}
 }
 
