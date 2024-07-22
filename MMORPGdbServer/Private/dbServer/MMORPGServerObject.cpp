@@ -466,6 +466,88 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 		}
 		break;
 	}
+	case SP_EditorCharacterRequests:
+	{
+		//收到编辑角色的请求
+		int32 InUserID = INDEX_NONE;
+		FString CAJson;
+		FSimpleAddrInfo AddrInfo;
+
+		SIMPLE_PROTOCOLS_RECEIVE(SP_EditorCharacterRequests, InUserID, CAJson, AddrInfo);
+		if (InUserID > 0 && CAJson.Len() > 0)
+		{
+			//将角色Json解析成角色信息
+			FMMORPGCharacterAppearance CA;
+			NetDataAnalysis::StringToFCharacterAppearacnce(CAJson, CA);
+			if (CA.SlotPosition != INDEX_NONE)
+			{
+				///数据库
+				//先从元数据中拿到用户数据
+				FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE meta_key=\"character_ca\" and user_id=%i;"), InUserID);
+				TArray<FSimpleMysqlResult> Result;
+				FString IDs;
+				if (Get(SQL, Result))
+				{
+					if (Result.Num() > 0)
+					{
+						for (auto& Temp : Result)
+						{
+							if (FString* InMetaValue = Temp.Rows.Find(TEXT("meta_value")))
+							{
+								IDs = InMetaValue->Replace(TEXT("|"),TEXT(","));
+							}
+						}
+					}
+				}
+				//获取要更新的角色ID
+				SQL.Empty();
+				SQL = FString::Printf(TEXT("SELECT id FROM mmorpg_characters_ca WHERE mmorpg_slot=%i and id in (%s)"), CA.SlotPosition, *IDs);
+				Result.Empty();
+				int32 UpdateID = INDEX_NONE;
+				if (Get(SQL, Result))
+				{
+					if (Result.Num() > 0)
+					{
+						for (auto& Temp : Result)
+						{
+							if (FString* InidValue = Temp.Rows.Find(TEXT("id")))
+							{
+								UpdateID = FCString::Atoi(**InidValue);
+							}
+						}
+					}
+				}
+
+				//更新角色数据
+				if (UpdateID != INDEX_NONE)
+				{
+					SQL.Empty();
+					SQL = FString::Printf(
+						TEXT("UPDATE mmorpg_characters_ca \
+							SET mmorpg_name=\"%s\" ,mmorpg_date=\"%s\",mmorpg_slot=%i,\
+							leg_size=%.2lf,waist_size=%.2lf,arm_size=%.2lf WHERE id=%i"),
+						*CA.Name, *CA.Date, CA.SlotPosition,
+						CA.LegSize, CA.WaistSize, CA.ArmSize, UpdateID);
+
+					bool bUpdateSucceeded = false;
+
+					//发送编辑角色回调
+					if (Post(SQL))
+					{
+						bUpdateSucceeded = true;
+						SIMPLE_PROTOCOLS_SEND(SP_EditorCharacterResponses, bUpdateSucceeded, AddrInfo);
+						UE_LOG(LogMMORPGdbServer, Display, TEXT("SP_EditorCharacterResponses true"));
+					}
+					else
+					{
+						SIMPLE_PROTOCOLS_SEND(SP_EditorCharacterResponses, bUpdateSucceeded, AddrInfo);
+						UE_LOG(LogMMORPGdbServer, Display, TEXT("SP_EditorCharacterResponses false"));
+					}
+				}
+			}
+		}
+		break;
+	}
 	}
 }
 

@@ -86,6 +86,19 @@ void UMMORPGdbClientObject::RecvProtocol(uint32 InProtocol)
 		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_DeleteCharacterResponses]"));
 		break;
 	}
+	case SP_EditorCharacterResponses:
+	{
+		FSimpleAddrInfo AddrInfo;
+		bool bUpdateSucceeded = false;
+
+		//收到编辑角色回调
+		SIMPLE_PROTOCOLS_RECEIVE(SP_EditorCharacterResponses, bUpdateSucceeded, AddrInfo);
+
+		SIMPLE_SERVER_SEND(GateServer, SP_EditorCharacterResponses, AddrInfo, bUpdateSucceeded);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_EditorCharacterResponses]"));
+		break;
+	}
 	}
 }
 

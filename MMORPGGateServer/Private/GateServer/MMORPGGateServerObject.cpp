@@ -106,6 +106,22 @@ void UMMORPGGateServerObject::RecvProtocol(uint32 InProtocol)
 		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_DeleteCharacterRequests] InUserID=%i SlotID=%i"), InUserID, SlotID);
 		break;
 	}
+	case SP_EditorCharacterRequests:
+	{
+		//收到编辑角色的请求
+		int32 InUserID = INDEX_NONE;
+		FString CAJson;
+		SIMPLE_PROTOCOLS_RECEIVE(SP_EditorCharacterRequests, InUserID, CAJson);
+
+		//获取本地服务器地址信息
+		FSimpleAddrInfo AddrInfo;
+		GetAddrInfo(AddrInfo);
+		//把本地服务器当作客户端向数据库服务器转发协议
+		SIMPLE_CLIENT_SEND(dbClient, SP_EditorCharacterRequests, InUserID, CAJson, AddrInfo);
+
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_EditorCharacterRequests] InUserID=%i CAJson=%s"), InUserID, *CAJson);
+		break;
+	}
 	}
 }
 
