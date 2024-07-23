@@ -12,5 +12,9 @@ public class MMORPGCenterServer : ModuleRules
 
 		PrivateDependencyModuleNames.Add("Core");
 		PrivateDependencyModuleNames.Add("Projects");
+		PrivateDependencyModuleNames.Add("CoreUObject");
+		PrivateDependencyModuleNames.Add("ApplicationCore");
+		PrivateDependencyModuleNames.Add("SimpleNetChannel");
+		PrivateDependencyModuleNames.Add("MMORPGCommon");
 	}
 }
