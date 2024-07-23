@@ -52,6 +52,8 @@ void UMMORPGServerObject::Init()
 		`leg_size` double(11,4) DEFAULT '0.00',\
 		`waist_size` double(11,4) DEFAULT '0.00',\
 		`arm_size` double(11,4) DEFAULT '0.00',\
+		`head_size` double(11,4) DEFAULT '0.00',\
+		`chest_size` double(11,4) DEFAULT '0.00',\
 		PRIMARY KEY(`id`)\
 		) ENGINE = INNODB DEFAULT CHARSET = utf8; ");
 
@@ -230,6 +232,14 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 							{
 								InLast.ArmSize = FCString::Atof(**InArmSize);
 							}
+							if (FString* InHeadSize = Temp.Rows.Find(TEXT("head_size")))
+							{
+								InLast.HeadSize = FCString::Atof(**InHeadSize);
+							}
+							if (FString* InChestSize = Temp.Rows.Find(TEXT("chest_size")))
+							{
+								InLast.ChestSize = FCString::Atof(**InChestSize);
+							}
 						}
 					}
 				}
@@ -313,8 +323,10 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 					if (bCreateCharacter)
 					{
 						SQL.Empty();
-						SQL = FString::Printf(TEXT("INSERT INTO mmorpg_characters_ca(mmorpg_name,mmorpg_date,mmorpg_slot,leg_size,waist_size,arm_size) VALUES(\"%s\",\"%s\",%i,%.2lf,%.2lf,%.2lf);"), 
-							*CA.Name, *CA.Date, CA.SlotPosition, CA.LegSize, CA.WaistSize, CA.ArmSize);
+						SQL = FString::Printf(TEXT("INSERT INTO mmorpg_characters_ca\
+											(mmorpg_name,mmorpg_date,mmorpg_slot,leg_size,waist_size,arm_size,head_size,chest_size) \
+											VALUES(\"%s\",\"%s\",%i,%.2lf,%.2lf,%.2lf,%.2lf,%.2lf);"), 
+											*CA.Name, *CA.Date, CA.SlotPosition, CA.LegSize, CA.WaistSize, CA.ArmSize, CA.HeadSize, CA.ChestSize);
 						if (Post(SQL))
 						{
 							//插入成功后查询角色名字
@@ -525,9 +537,9 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 					SQL = FString::Printf(
 						TEXT("UPDATE mmorpg_characters_ca \
 							SET mmorpg_name=\"%s\" ,mmorpg_date=\"%s\",mmorpg_slot=%i,\
-							leg_size=%.2lf,waist_size=%.2lf,arm_size=%.2lf WHERE id=%i"),
+							leg_size=%.2lf,waist_size=%.2lf,arm_size=%.2lf,head_size=%.2lf,chest_size=%.2lf WHERE id=%i"),
 						*CA.Name, *CA.Date, CA.SlotPosition,
-						CA.LegSize, CA.WaistSize, CA.ArmSize, UpdateID);
+						CA.LegSize, CA.WaistSize, CA.ArmSize,CA.HeadSize,CA.ChestSize, UpdateID);
 
 					bool bUpdateSucceeded = false;
 
