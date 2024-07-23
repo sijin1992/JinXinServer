@@ -6,3 +6,4 @@ class FSimpleNetManage;
 
 FSimpleNetManage* GateServer;
 FSimpleNetManage* dbClient;
+FSimpleNetManage* CenterClient;
