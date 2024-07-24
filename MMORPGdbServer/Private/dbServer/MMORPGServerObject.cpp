@@ -6,6 +6,7 @@
 #include "Protocol/LoginProtocol.h"
 #include "Global/SimpleNetGlobalInfo.h"
 #include "Protocol/HallProtocol.h"
+#include "Protocol/ServerProtocol.h"
 
 void UMMORPGServerObject::Init()
 {
@@ -169,36 +170,18 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 			///数据库查询	
 			//先拿到用户元数据
 			FString IDs;
-			FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id = %i and meta_key = \"character_ca\";"), InUserID);
-			TArray<FSimpleMysqlResult> Result;
-			if (Get(SQL, Result))
+			TArray<FString> InIDs;
+			if (GetCharacterIDsByUserMate(InUserID, InIDs))
 			{
-				if (Result.Num() > 0)
-				{
-					//解析数据库返回的数据,组装成角色ID字符串："1, 2, 3, 4, 5"
-					for (auto& MetaTemp : Result)
-					{
-						if (FString* InMetaValue = MetaTemp.Rows.Find(TEXT("meta_value")))
-						{
-							TArray<FString> Arrays;
-							InMetaValue->ParseIntoArray(Arrays, TEXT("|"));
-							for (auto& TempID : Arrays)
-							{
-								IDs += TempID + TEXT(",");
-							}
-							IDs.RemoveFromEnd(TEXT(","));
-						}
-					}
-				}
+				GetSerialString(TEXT(","), InIDs, IDs);
 			}
 
 			FCharacterAppearacnce CharacterAppearances;
 			//拿到角色数据
 			if (!IDs.IsEmpty())
 			{
-				SQL.Empty();
-				SQL = FString::Printf(TEXT("SELECT * FROM mmorpg_characters_ca WHERE id in(%s); "), *IDs);
-				Result.Empty();
+				FString SQL = FString::Printf(TEXT("SELECT * FROM mmorpg_characters_ca WHERE id in(%s); "), *IDs);
+				TArray<FSimpleMysqlResult> Result;
 				if (Get(SQL, Result))
 				{
 					if (Result.Num() > 0)
@@ -385,6 +368,36 @@ void UMMORPGServerObject::RecvProtocol(uint32 InProtocol)
 				UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_CreateCharacterResponses]"));
 			}
 		}
+		break;
+	}
+	case SP_PlayerRegistInfoRequests:
+	{
+		//收到中心服务器发来的玩家注册信息请求5
+		int32 InUserID = INDEX_NONE;
+		int32 SlotID = INDEX_NONE;
+		FSimpleAddrInfo GateAddrInfo;
+		FSimpleAddrInfo CenterAddrInfo;
+		SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerRegistInfoRequests, InUserID, SlotID, GateAddrInfo, CenterAddrInfo);
+		UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_PlayerRegistInfoRequests]"));
+
+		if (InUserID != INDEX_NONE && SlotID != INDEX_NONE)
+		{
+			FString UserInfoJson;
+			FString SlotInfoJson;
+			if (GetUserInfo(InUserID, UserInfoJson) && GetSlotCAInfo(InUserID, SlotID, SlotInfoJson))
+			{
+				//向中心服务器发送玩家注册信息成功回调6
+				SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotInfoJson, GateAddrInfo, CenterAddrInfo);
+				UE_LOG(LogMMORPGdbServer, Display, TEXT("[SP_PlayerRegistInfoResponses]"));
+			}
+			else
+			{
+				UserInfoJson = TEXT("[]");
+				SlotInfoJson = TEXT("[]");
+				SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotInfoJson, GateAddrInfo, CenterAddrInfo);
+			}
+		}
+		
 		break;
 	}
 	case SP_DeleteCharacterRequests:
@@ -590,6 +603,141 @@ ECheckNameType UMMORPGServerObject::CheckName(const FString& InName)
 	return CheckNameType;
 }
 
+bool UMMORPGServerObject::GetUserInfo(int32 InUserID, FString& OutJsonString)
+{
+	FMMORPGUserData UserData;
+	UserData.ID = InUserID;
+	//访问数据库
+	FString SQL = FString::Printf(TEXT("SELECT user_login,user_email,user_url,display_name FROM wp_users WHERE ID=%i;"), InUserID);
+	TArray<FSimpleMysqlResult> Result;
+
+	if (Get(SQL, Result))
+	{
+		if (Result.Num() > 0)
+		{
+			//解析数据库返回的数据
+			for (auto& Temp : Result)
+			{
+				if (FString* InUserLogin = Temp.Rows.Find(TEXT("user_login")))
+				{
+					UserData.Account = *InUserLogin;
+				}
+				if (FString* InUserEmail = Temp.Rows.Find(TEXT("user_email")))
+				{
+					UserData.Email = *InUserEmail;
+				}
+				//if (FString* InUserUrl = Temp.Rows.Find(TEXT("user_url")))
+				//{
+				//	UserData.Email = *InUserEmail;
+				//}
+				if (FString* InDisplayName = Temp.Rows.Find(TEXT("display_name")))
+				{
+					UserData.Name = *InDisplayName;
+				}
+			}
+		}
+	}
+	//将数据转成Json
+	NetDataAnalysis::UserDataToString(UserData, OutJsonString);
+
+	return OutJsonString.Len() > 0;
+}
+
+bool UMMORPGServerObject::GetSlotCAInfo(int32 InUserID, int32 InSlotID, FString& OutJsonString)
+{
+	TArray<FString> IDs;
+	if (GetCharacterIDsByUserMate(InUserID, IDs))
+	{
+		FString IDString;
+		GetSerialString(TEXT(","), IDs, IDString);
+
+		//拿到角色数据
+		FString SQL = FString::Printf(TEXT("SELECT * FROM mmorpg_characters_ca WHERE id in(%s) and mmorpg_slot=%i; "), *IDString, InSlotID);
+		TArray<FSimpleMysqlResult> Result;
+		if (Get(SQL, Result))
+		{
+			if (Result.Num() > 0)
+			{
+				FMMORPGCharacterAppearance CA;
+				//解析数据库返回的数据,组装成角色列表
+				for (auto& Temp : Result)
+				{
+					if (FString* InName = Temp.Rows.Find(TEXT("mmorpg_name")))
+					{
+						CA.Name = *InName;
+					}
+					if (FString* InDate = Temp.Rows.Find(TEXT("mmorpg_date")))
+					{
+						CA.Date = *InDate;
+					}
+					if (FString* InSlotPos = Temp.Rows.Find(TEXT("mmorpg_slot")))
+					{
+						CA.SlotPosition = FCString::Atoi(**InSlotPos);
+					}
+					if (FString* InLegSize = Temp.Rows.Find(TEXT("leg_size")))
+					{
+						CA.LegSize = FCString::Atof(**InLegSize);
+					}
+					if (FString* InWaistSize = Temp.Rows.Find(TEXT("waist_size")))
+					{
+						CA.WaistSize = FCString::Atof(**InWaistSize);
+					}
+					if (FString* InArmSize = Temp.Rows.Find(TEXT("arm_size")))
+					{
+						CA.ArmSize = FCString::Atof(**InArmSize);
+					}
+					if (FString* InHeadSize = Temp.Rows.Find(TEXT("head_size")))
+					{
+						CA.HeadSize = FCString::Atof(**InHeadSize);
+					}
+					if (FString* InChestSize = Temp.Rows.Find(TEXT("chest_size")))
+					{
+						CA.ChestSize = FCString::Atof(**InChestSize);
+					}
+				}
+
+				//将角色数据转成Json
+				NetDataAnalysis::CharacterAppearacnceToString(CA, OutJsonString);
+
+				return !OutJsonString.IsEmpty();
+			}
+		}
+	}
+
+	return false;
+}
+
+bool UMMORPGServerObject::GetCharacterIDsByUserMate(int32 InUserID, TArray<FString>& OutIDs)
+{
+	FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id = %i and meta_key = \"character_ca\";"), InUserID);
+	TArray<FSimpleMysqlResult> Result;
+	if (Get(SQL, Result))
+	{
+		if (Result.Num() > 0)
+		{
+			for (auto& MetaTemp : Result)
+			{
+				if (FString* InMetaValue = MetaTemp.Rows.Find(TEXT("meta_value")))
+				{
+					InMetaValue->ParseIntoArray(OutIDs, TEXT("|"));
+				}
+			}
+		}
+		return true;
+	}
+	return OutIDs.Num() > 0;
+}
+
+void UMMORPGServerObject::GetSerialString(TCHAR* InPrefix, const TArray<FString>& InStrings, FString& OutString)
+{
+	OutString.Empty();
+	for (auto& Temp : InStrings)
+	{
+		OutString += Temp + InPrefix;
+	}
+	OutString.RemoveFromEnd(InPrefix);
+}
+
 void UMMORPGServerObject::CheckPasswordResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful)
 {
 	if (bLinkSuccessful)
@@ -632,45 +780,13 @@ void UMMORPGServerObject::CheckPasswordResult(const FSimpleHttpRequest& InReques
 			{
 				if (UserID != 0)
 				{
-					FMMORPGUserData UserData;
-					UserData.ID = UserID;
-					//访问数据库
-					FString SQL = FString::Printf(TEXT("SELECT user_login,user_email,user_url,display_name FROM wp_users WHERE ID=%i;"), UserID);
-					TArray<FSimpleMysqlResult> Result;
-
-					if (Get(SQL, Result))
+					if (GetUserInfo(UserID, String))
 					{
-						if (Result.Num() > 0)
-						{
-							//解析数据库返回的数据
-							for (auto& Temp : Result)
-							{
-								if (FString* InUserLogin = Temp.Rows.Find(TEXT("user_login")))
-								{
-									UserData.Account = *InUserLogin;
-								}
-								if (FString* InUserEmail = Temp.Rows.Find(TEXT("user_email")))
-								{
-									UserData.Email = *InUserEmail;
-								}
-								//if (FString* InUserUrl = Temp.Rows.Find(TEXT("user_url")))
-								//{
-								//	UserData.Email = *InUserEmail;
-								//}
-								if (FString* InDisplayName = Temp.Rows.Find(TEXT("display_name")))
-								{
-									UserData.Name = *InDisplayName;
-								}
-							}
-						}
+						UE_LOG(LogMMORPGdbServer, Display, TEXT("MMORPGdbServer login success"));
+						//向登录服务器发送登录回调，告知登录成功
+						ELoginType Type = ELoginType::LOGIN_SUCCESS;
+						SIMPLE_PROTOCOLS_SEND(SP_LoginResponses, AddrInfo, Type, String);
 					}
-					//将数据转成Json
-					NetDataAnalysis::UserDataToString(UserData, String);
-
-					UE_LOG(LogMMORPGdbServer, Display, TEXT("MMORPGdbServer login success"));
-					//向登录服务器发送登录回调，告知登录成功
-					ELoginType Type = ELoginType::LOGIN_SUCCESS;
-					SIMPLE_PROTOCOLS_SEND(SP_LoginResponses, AddrInfo, Type, String);
 				}
 			}
 			else

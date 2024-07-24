@@ -23,6 +23,10 @@ public:
 private:
 	ECheckNameType CheckName(const FString& InName);
 
+	bool GetUserInfo(int32 InUserID, FString& OutJsonString);
+	bool GetSlotCAInfo(int32 InUserID, int32 InSlotID, FString& OutJsonString);
+	bool GetCharacterIDsByUserMate(int32 InUserID, TArray<FString>& OutIDs);
+	void GetSerialString(TCHAR* InPrefix, const TArray<FString>& InStrings, FString& OutString);
 protected:
 	/// <summary>
 	/// 验证密码回调的代理函数

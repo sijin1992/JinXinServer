@@ -92,18 +92,18 @@ void UMMORPGGateServerObject::RecvProtocol(uint32 InProtocol)
 	}
 	case SP_LoginToDSServerRequests:
 	{
-		//收到登录DS服务器的请求
+		//收到客户端发送的登录DS服务器的请求2
 		int32 InUserID = INDEX_NONE;
 		int32 SlotID = INDEX_NONE;
 		SIMPLE_PROTOCOLS_RECEIVE(SP_LoginToDSServerRequests, InUserID, SlotID);
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_LoginToDSServerRequests] InUserID=%i SlotID=%i"), InUserID, SlotID);
 
 		//获取本地服务器地址信息
 		FSimpleAddrInfo AddrInfo;
 		GetAddrInfo(AddrInfo);
-		//把本地服务器当作客户端向数据库服务器转发协议
+		//把本地服务器当作客户端向中心服务器转发请求协议
 		SIMPLE_CLIENT_SEND(CenterClient, SP_LoginToDSServerRequests, InUserID, SlotID, AddrInfo);
 
-		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_LoginToDSServerRequests] InUserID=%i SlotID=%i"), InUserID, SlotID);
 		break;
 	}
 	case SP_DeleteCharacterRequests:
