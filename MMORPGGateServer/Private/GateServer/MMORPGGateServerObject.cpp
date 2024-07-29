@@ -5,6 +5,12 @@
 #include "Protocol/HallProtocol.h"
 #include "ServerList.h"
 
+UMMORPGGateServerObject::UMMORPGGateServerObject()
+	:UserID(INDEX_NONE)
+{
+
+}
+
 void UMMORPGGateServerObject::Init()
 {
 	Super::Init();
@@ -18,6 +24,16 @@ void UMMORPGGateServerObject::Tick(float DeltaTime)
 void UMMORPGGateServerObject::Close()
 {
 	Super::Close();
+	//向中心服务器发送玩家退出、移除注册请求
+	if (UserID != INDEX_NONE)
+	{
+		SIMPLE_CLIENT_SEND(CenterClient, SP_PlayerQuitRequests, UserID);
+		UE_LOG(LogMMORPGGateServer, Display, TEXT("[SP_PlayerQuitRequests] UserID=%i"), UserID);
+	}
+	else
+	{
+		UE_LOG(LogMMORPGGateServer, Error, TEXT("[SP_PlayerQuitRequests] Error UserID=%i"), UserID);
+	}
 }
 
 void UMMORPGGateServerObject::RecvProtocol(uint32 InProtocol)
@@ -47,7 +63,8 @@ void UMMORPGGateServerObject::RecvProtocol(uint32 InProtocol)
 		//收到获取角色信息请求
 		int32 InUserID = INDEX_NONE;
 		SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, InUserID);
-
+		//注册用户
+		UserID = InUserID;
 		//获取本地服务器地址信息
 		FSimpleAddrInfo AddrInfo;
 		GetAddrInfo(AddrInfo);

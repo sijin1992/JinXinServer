@@ -17,6 +17,7 @@ public:
 	virtual void RecvProtocol(uint32 InProtocol);
 
 	void AddRegistInfo(const FMMORPGPlayerRegistInfo& InRegistInfo);
+	bool RemoveRegistInfo(const int32 InUserID);
 private:
 	TMap<int32, FMMORPGPlayerRegistInfo> PlayerRegistInfos;//注册玩家信息列表
 };

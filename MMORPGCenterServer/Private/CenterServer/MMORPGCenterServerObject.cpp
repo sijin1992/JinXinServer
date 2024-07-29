@@ -56,6 +56,28 @@ void UMMORPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 		}
 		break;
 	}
+	case SP_PlayerQuitRequests:
+	{
+		//收到GateServer发过来的移除注册请求
+		int32 InUserID = INDEX_NONE;
+		//接收角色数据
+		SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerQuitRequests, InUserID);
+
+		UE_LOG(LogMMORPGCenterServer, Display, TEXT("[SP_PlayerQuitRequests]"));
+
+		if (InUserID != INDEX_NONE)
+		{
+			if (RemoveRegistInfo(InUserID))
+			{
+				UE_LOG(LogMMORPGCenterServer, Display, TEXT("Object removed [%i] successfully"), InUserID);
+			}
+			else
+			{
+				UE_LOG(LogMMORPGCenterServer, Display, TEXT("The Object was not found [%i] and may have been removed"), InUserID);
+			}
+		}
+		break;
+	}
 	}
 }
 
@@ -69,4 +91,17 @@ void UMMORPGCenterServerObject::AddRegistInfo(const FMMORPGPlayerRegistInfo& InR
 			break;
 		}
 	}
+}
+
+bool UMMORPGCenterServerObject::RemoveRegistInfo(const int32 InUserID)
+{
+	for (auto& Temp : PlayerRegistInfos)
+	{
+		if (Temp.Value.UserInfo.ID == InUserID)
+		{
+			Temp.Value.Reset();
+			return true;
+		}
+	}
+	return false;
 }
