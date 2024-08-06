@@ -40,22 +40,18 @@ void UMMORPGdbClientObject::RecvProtocol(uint32 InProtocol)
 
 		if (UserInfoJson != TEXT("[]") && SlotInfoJson != TEXT("[]"))
 		{
-			//拿到中心服务器
-			if (UMMORPGCenterServerObject* InCenterServer = Cast<UMMORPGCenterServerObject>(FSimpleNetManage::GetNetManageNetworkObject(CenterServer, CenterAddrInfo)))
-			{
-				//注册成功
-				FMMORPGPlayerRegistInfo InRegistInfo;
-				NetDataAnalysis::StringToFCharacterAppearacnce(SlotInfoJson, InRegistInfo.CAInfo);
-				NetDataAnalysis::StringToUserData(UserInfoJson, InRegistInfo.UserInfo);
+			//注册成功
+			FMMORPGPlayerRegistInfo InRegistInfo;
+			NetDataAnalysis::StringToFCharacterAppearacnce(SlotInfoJson, InRegistInfo.CAInfo);
+			NetDataAnalysis::StringToUserData(UserInfoJson, InRegistInfo.UserInfo);
 
-				InCenterServer->AddRegistInfo(InRegistInfo);
-				//准备DS服务器地址信息,通过中心服务器向网关服务器转发登录到DS服务器回调8
-				FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("127.0.0.1"),7777);//DS服务器地址,7777是UE5的端口
-				SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, DsAddr);
+			UMMORPGCenterServerObject::AddRegistInfo(InRegistInfo);
+			//准备DS服务器地址信息,通过中心服务器向网关服务器转发登录到DS服务器回调8
+			FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("127.0.0.1"),7777);//DS服务器地址,7777是UE5的端口
+			SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, DsAddr);
 
-				double NowTime = FPlatformTime::Seconds();
-				UE_LOG(LogMMORPGCenterServer, Display, TEXT("[SP_LoginToDSServerResponses 8] NowTime=%d"), NowTime);
-			}
+			double NowTime = FPlatformTime::Seconds();
+			UE_LOG(LogMMORPGCenterServer, Display, TEXT("[SP_LoginToDSServerResponses 8] NowTime=%d"), NowTime);
 		}
 		break;
 	}

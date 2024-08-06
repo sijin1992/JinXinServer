@@ -5,13 +5,19 @@
 #include "../ServerList.h"
 #include "Protocol/GameProtocol.h"
 
+TMap<int32, FMMORPGPlayerRegistInfo> UMMORPGCenterServerObject::PlayerRegistInfos;
+
 void UMMORPGCenterServerObject::Init()
 {
 	Super::Init();
-	//预分配注册玩家信息列表
-	for (int32 i = 0; i < 2000; i++)
+
+	if (!PlayerRegistInfos.Num())
 	{
-		PlayerRegistInfos.Add(i, FMMORPGPlayerRegistInfo());
+		//预分配注册玩家信息列表
+		for (int32 i = 0; i < 2000; i++)
+		{
+			PlayerRegistInfos.Add(i, FMMORPGPlayerRegistInfo());
+		}
 	}
 }
 
