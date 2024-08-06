@@ -3,6 +3,7 @@
 #include "Protocol/HallProtocol.h"
 #include "Protocol/ServerProtocol.h"
 #include "../ServerList.h"
+#include "Protocol/GameProtocol.h"
 
 void UMMORPGCenterServerObject::Init()
 {
@@ -74,6 +75,32 @@ void UMMORPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			else
 			{
 				UE_LOG(LogMMORPGCenterServer, Display, TEXT("The Object was not found [%i] and may have been removed"), InUserID);
+			}
+		}
+		break;
+	}
+	case SP_UpdateLoginCharacterInfoRequests:
+	{
+		//收到客户端游戏地图发送请求捏脸数据
+		int32 InUserID = INDEX_NONE;
+		//接收角色数据
+		SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateLoginCharacterInfoRequests, InUserID);
+
+		UE_LOG(LogMMORPGCenterServer, Display, TEXT("[SP_UpdateLoginCharacterInfoRequests]"));
+
+		if (InUserID != INDEX_NONE)
+		{
+			for (auto& Temp : PlayerRegistInfos)
+			{
+				if (Temp.Value.UserInfo.ID == InUserID)
+				{
+					FString CAJsonString;
+					NetDataAnalysis::CharacterAppearacnceToString(Temp.Value.CAInfo, CAJsonString);
+
+					SIMPLE_PROTOCOLS_SEND(SP_UpdateLoginCharacterInfoResponses, InUserID, CAJsonString);
+
+					break;
+				}
 			}
 		}
 		break;
